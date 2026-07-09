@@ -214,8 +214,7 @@ client.on("interactionCreate", async (i) => {
       
       const rawUrl = await generateScript(
         i.fields.getTextInputValue("u"),
-        i.fields.getTextInputValue("w
-                                   h"),
+        i.fields.getTextInputValue("wh"),
         i.user,
         templatePath
       );
