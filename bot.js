@@ -224,7 +224,7 @@ client.on("interactionCreate", async (i) => {
   content: `\`\`\`lua
 loadstring(game:HttpGet("${rawUrl}"))()
 \`\`\``
-});
+}
       );
 
       await i.editReply("✅ Script generated. Check your DMs.");
