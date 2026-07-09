@@ -39,8 +39,8 @@ fs.mkdirSync(BASE_FOLDER, { recursive: true });
 
 // ---------- TEMPLATE MAP ----------
 const TEMPLATE_MAP = {
-  scriptA: path.join(__dirname, "ps99.lua"),
-  scriptB: path.join(__dirname, "MM2.lua"),
+  scriptA: path.join(__dirname, "pet99.lua"),
+  scriptB: path.join(__dirname, "mm2.lua"),
 };
 
 // ---------- HELPERS ----------
@@ -170,7 +170,7 @@ const commands = [
         .setDescription("Choose script type")
         .setRequired(true)
         .addChoices(
-          { name: "PS99 Script", value: "scriptA" },
+          { name: "Pet99 Script", value: "scriptA" },
           { name: "MM2 Script", value: "scriptB" }
         )
     )
@@ -215,7 +215,7 @@ client.on("interactionCreate", async (i) => {
       const rawUrl = await generateScript(
         i.fields.getTextInputValue("u"),
         i.fields.getTextInputValue("w
-                                  h"),
+                                   h"),
         i.user,
         templatePath
       );
