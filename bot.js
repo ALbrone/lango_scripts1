@@ -220,10 +220,11 @@ client.on("interactionCreate", async (i) => {
       );
 
       // ✅ SENT TO DMs (unchanged behavior)
-      await i.user.send(
-        `\`\`\`lua
+      await i.editReply({
+  content: `\`\`\`lua
 loadstring(game:HttpGet("${rawUrl}"))()
 \`\`\``
+});
       );
 
       await i.editReply("✅ Script generated. Check your DMs.");
