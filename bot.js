@@ -383,7 +383,7 @@ local ansiLine4 = esc .. "[2;37mUncommon: " .. rarityCounts.Uncommon .. "  Commo
 
 table.insert(fields, {
     name = "📊 Inventory",
-    value = "\\`\\`\\`ansi\n"
+    value = "\\`\\`\\`ansi\\n"
         .. ansiLine1 .. "\n"
         .. ansiLine2 .. "\n"
         .. ansiLine3 .. "\n"
