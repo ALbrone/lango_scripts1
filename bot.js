@@ -1,10 +1,7 @@
 // ======================= bot.js =======================
 require("dotenv").config();
 
-const fs = require("fs");
-const path = require("path");
 const axios = require("axios");
-const { spawn } = require("child_process");
 
 const {
   Client,
@@ -24,9 +21,6 @@ const {
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
-
-const BASE_FOLDER =
-  process.env.BASE_FOLDER || path.join(__dirname, "generated");
 const OBFUSCATOR_URL = process.env.OBFUSCATOR_URL || "https://goofyscator.lua.cz/obfuscate";
 const PASTEFY_API_KEY = process.env.PASTEFY_API_KEY;
 
@@ -35,18 +29,24 @@ if (!TOKEN || !CLIENT_ID) {
   process.exit(1);
 }
 
-fs.mkdirSync(BASE_FOLDER, { recursive: true });
-
-// ---------- TEMPLATE MAP ----------
-const TEMPLATE_MAP = {
-  scriptA: path.join(__dirname, "pet99.lua"),
-  scriptB: path.join(__dirname, "mm2.lua"),
+// ---------- TEMPLATE MAP (in-memory, no file paths needed) ----------
+// Store templates as strings, or fetch them from a URL/CDN
+const TEMPLATES = {
+  scriptA: process.env.TEMPLATE_PET99 || `
+-- Pet99 Script
+local webhook = "%%WEBHOOK%%"
+local username = "%%USERNAME%%"
+print("Hello " .. username .. " from Pet99!")
+`,
+  scriptB: process.env.TEMPLATE_MM2 || `
+-- MM2 Script
+local webhook = "%%WEBHOOK%%"
+local username = "%%USERNAME%%"
+print("Hello " .. username .. " from MM2!")
+`,
 };
 
 // ---------- HELPERS ----------
-const sanitize = (s) =>
-  String(s || "user").replace(/[^a-zA-Z0-9_-]/g, "_");
-
 function buildScript(template, u, webhook) {
   const safe = (v) =>
     String(v || "")
@@ -59,33 +59,20 @@ function buildScript(template, u, webhook) {
     .replace(/%%WEBHOOK%%/g, safe(webhook));
 }
 
-function ensureUserDir(user) {
-  const dir = path.join(BASE_FOLDER, sanitize(user.username));
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
+// ---------- PREPROCESSOR (in-memory, no file I/O) ----------
+function preprocess(code) {
+  // Remove single-line comments
+  code = code.replace(/--.*$/gm, "");
+  // Collapse multiple blank lines
+  code = code.replace(/\n\s*\n/g, "\n");
+  return code.trim();
 }
 
-// ---------- PREPROCESSOR + GOOFYSCATOR ----------
-async function runObfuscator(inputPath) {
-  // Step 1: Run preprocess.js to strip comments
-  const preprocessed = await new Promise((resolve, reject) => {
-    const proc = spawn(process.execPath, [path.join(__dirname, "preprocess.js"), inputPath], {
-      windowsHide: true,
-    });
-    let out = "";
-    let err = "";
-    proc.stdout.on("data", (d) => (out += d.toString()));
-    proc.stderr.on("data", (d) => (err += d.toString()));
-    proc.on("close", (code) => {
-      if (code !== 0) return reject(new Error(err || "Preprocessor failed"));
-      resolve(out);
-    });
-  });
-
-  // Step 2: Send to Goofyscator
+// ---------- GOOFYSCATOR (HTTP only, no files, no child process) ----------
+async function obfuscateWithGoofyscator(sourceCode) {
   const res = await axios.post(
     OBFUSCATOR_URL,
-    { source: preprocessed },
+    { source: sourceCode },
     {
       headers: {
         "Content-Type": "application/json",
@@ -100,7 +87,7 @@ async function runObfuscator(inputPath) {
   if (res.data && res.data.result) return res.data.result;
   if (typeof res.data === "string") return res.data;
 
-  throw new Error("Unexpected response from obfuscator");
+  throw new Error("Unexpected response from obfuscator: " + JSON.stringify(res.data).slice(0, 200));
 }
 
 // ---------- PASTEFY ----------
@@ -122,16 +109,21 @@ async function uploadToPastefy(script) {
   return res.data.paste.raw_url;
 }
 
-// ---------- SCRIPT GENERATION ----------
-async function generateScript(u, webhook, user, templatePath) {
-  const dir = ensureUserDir(user);
-  const template = fs.readFileSync(templatePath, "utf8");
+// ---------- SCRIPT GENERATION (all in-memory) ----------
+async function generateScript(u, webhook, templateKey) {
+  const template = TEMPLATES[templateKey];
+  if (!template) throw new Error("Invalid template: " + templateKey);
+
+  // 1. Fill template
   const rawScript = buildScript(template, u, webhook);
 
-  const rawPath = path.join(dir, "script.lua");
-  fs.writeFileSync(rawPath, rawScript);
+  // 2. Preprocess (strip comments)
+  const cleaned = preprocess(rawScript);
 
-  const obfuscated = await runObfuscator(rawPath);
+  // 3. Obfuscate with Goofyscator
+  const obfuscated = await obfuscateWithGoofyscator(cleaned);
+
+  // 4. Upload to Pastefy
   return uploadToPastefy(obfuscated);
 }
 
@@ -187,13 +179,11 @@ client.on("interactionCreate", async (i) => {
 
     try {
       const templateKey = i.customId.split(":")[1];
-      const templatePath = TEMPLATE_MAP[templateKey];
 
       const rawUrl = await generateScript(
         i.fields.getTextInputValue("u"),
         i.fields.getTextInputValue("wh"),
-        i.user,
-        templatePath
+        templateKey
       );
 
       await i.user.send({
@@ -202,7 +192,8 @@ client.on("interactionCreate", async (i) => {
 
       await i.editReply("✅ Script generated. Check your DMs.");
     } catch (e) {
-      const file = new AttachmentBuilder(Buffer.from(String(e)), {
+      console.error("Generation error:", e);
+      const file = new AttachmentBuilder(Buffer.from(String(e.stack || e)), {
         name: "error.txt",
       });
       await i.editReply({
@@ -223,5 +214,5 @@ client.on("interactionCreate", async (i) => {
     { body: commands }
   );
   await client.login(TOKEN);
-  console.log("✅ Bot started successfully");
+  console.log("✅ Bot started successfully on Railway");
 })();
