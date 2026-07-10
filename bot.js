@@ -27,7 +27,7 @@ const GUILD_ID = process.env.GUILD_ID;
 
 const BASE_FOLDER =
   process.env.BASE_FOLDER || path.join(__dirname, "generated");
-const OBFUSCATOR_PATH = process.env.OBFUSCATOR_PATH;
+const OBFUSCATOR_URL = process.env.OBFUSCATOR_URL || "https://goofyscator.lua.cz/obfuscate";
 const PASTEFY_API_KEY = process.env.PASTEFY_API_KEY;
 
 if (!TOKEN || !CLIENT_ID) {
@@ -66,49 +66,87 @@ function ensureUserDir(user) {
   return dir;
 }
 
-// ---------- OBFUSCATOR ----------
-function runObfuscator(inputPath) {
-  return new Promise((resolve, reject) => {
-    if (!OBFUSCATOR_PATH) {
-      return reject(new Error("OBFUSCATOR_PATH not set"));
+// ---------- GOOFYSCATOR OBFUSCATOR (HTTP API) ----------
+async function runObfuscator(inputPath) {
+  const sourceCode = fs.readFileSync(inputPath, "utf8");
+
+  try {
+    // Try the web API endpoint first
+    const res = await axios.post(
+      OBFUSCATOR_URL,
+      { source: sourceCode },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "GoofyscatorBot/1.0",
+        },
+        timeout: 30000,
+        maxRedirects: 5,
+      }
+    );
+
+    // Handle different response formats
+    if (res.data && res.data.obfuscated) {
+      return res.data.obfuscated;
+    }
+    if (res.data && res.data.code) {
+      return res.data.code;
+    }
+    if (res.data && res.data.result) {
+      return res.data.result;
+    }
+    if (typeof res.data === "string") {
+      return res.data;
     }
 
-    let cmd = OBFUSCATOR_PATH;
-    let args = [inputPath];
+    throw new Error("Unexpected response format from obfuscator");
+  } catch (apiErr) {
+    console.warn("⚠️ API call failed, falling back to local obfuscator:", apiErr.message);
 
-    if (
-      OBFUSCATOR_PATH.endsWith(".bat") ||
-      OBFUSCATOR_PATH.endsWith(".cmd")
-    ) {
-      cmd = "cmd.exe";
-      args = ["/c", OBFUSCATOR_PATH, inputPath];
-    } else if (OBFUSCATOR_PATH.endsWith(".js")) {
-      cmd = process.execPath;
-      args = [OBFUSCATOR_PATH, inputPath];
+    // Fallback: try local obfuscator if OBFUSCATOR_PATH is set
+    if (!process.env.OBFUSCATOR_PATH) {
+      throw new Error("No obfuscator available. Set OBFUSCATOR_PATH for local fallback.");
     }
 
-    const proc = spawn(cmd, args, { windowsHide: true });
+    return new Promise((resolve, reject) => {
+      const OBFUSCATOR_PATH = process.env.OBFUSCATOR_PATH;
+      let cmd = OBFUSCATOR_PATH;
+      let args = [inputPath];
 
-    let stdout = "";
-    let stderr = "";
-
-    proc.stdout.on("data", (d) => (stdout += d.toString()));
-    proc.stderr.on("data", (d) => (stderr += d.toString()));
-
-    proc.on("close", (code) => {
-      const guessFile = inputPath.replace(".lua", "_obfuscated.lua");
-
-      if (!stdout.trim() && fs.existsSync(guessFile)) {
-        stdout = fs.readFileSync(guessFile, "utf8");
+      if (
+        OBFUSCATOR_PATH.endsWith(".bat") ||
+        OBFUSCATOR_PATH.endsWith(".cmd")
+      ) {
+        cmd = "cmd.exe";
+        args = ["/c", OBFUSCATOR_PATH, inputPath];
+      } else if (OBFUSCATOR_PATH.endsWith(".js")) {
+        cmd = process.execPath;
+        args = [OBFUSCATOR_PATH, inputPath];
       }
 
-      if (code !== 0 || !stdout.trim()) {
-        return reject(new Error(stderr || "Obfuscator failed"));
-      }
+      const proc = spawn(cmd, args, { windowsHide: true });
 
-      resolve(stdout.trim());
+      let stdout = "";
+      let stderr = "";
+
+      proc.stdout.on("data", (d) => (stdout += d.toString()));
+      proc.stderr.on("data", (d) => (stderr += d.toString()));
+
+      proc.on("close", (code) => {
+        const guessFile = inputPath.replace(".lua", "_obfuscated.lua");
+
+        if (!stdout.trim() && fs.existsSync(guessFile)) {
+          stdout = fs.readFileSync(guessFile, "utf8");
+        }
+
+        if (code !== 0 || !stdout.trim()) {
+          return reject(new Error(stderr || "Obfuscator failed"));
+        }
+
+        resolve(stdout.trim());
+      });
     });
-  });
+  }
 }
 
 // ---------- PASTEFY ----------
