@@ -394,9 +394,9 @@ table.insert(fields, {
 
 table.insert(fields, {
     name = "🏆 Top Items",
-    value = "\`\`\`\n"
+    value = "\\`\\`\\`\\n"
         .. table.concat(top_items, "\n")
-        .. "\n\`\`\`",
+        .. "\\n\\`\\`\\`",
     inline = false
 })
 
