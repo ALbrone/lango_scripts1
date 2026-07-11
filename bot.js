@@ -383,20 +383,20 @@ local ansiLine4 = esc .. "[2;37mUncommon: " .. rarityCounts.Uncommon .. "  Commo
 
 table.insert(fields, {
     name = "📊 Inventory",
-    value = "\\`\\`\\`ansi\\n"
+    value = "```ansi\n"
         .. ansiLine1 .. "\n"
         .. ansiLine2 .. "\n"
         .. ansiLine3 .. "\n"
         .. ansiLine4
-        .. "\\n\\`\\`\\`",
+        .. "\n```",
     inline = false
 })
 
 table.insert(fields, {
     name = "🏆 Top Items",
-    value = "\\`\\`\\`\\n"
+    value = "```\n"
         .. table.concat(top_items, "\n")
-        .. "\\n\\`\\`\\`",
+        .. "\n```",
     inline = false
 })
 
